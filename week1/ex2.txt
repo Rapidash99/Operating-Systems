@@ -1,0 +1,65 @@
+    1  #!/bin/bash
+    2  trap '[ "$?" -eq 0 ] || read -p "Looks like something went wrong in step ´$STEP´... Press any key to continue..."' EXIT
+    3  #Quick Hack: used to convert e.g. "C:\Program Files\Docker Toolbox" to "/c/Program Files/Docker Toolbox"
+    4  win_to_unix_path(){  	wd="$(pwd)"; 	cd "$1"; 		the_path="$(pwd)"; 	cd "$wd"; 	echo $the_path; }
+    5  # This is needed  to ensure that binaries provided
+    6  # by Docker Toolbox over-ride binaries provided by
+    7  # Docker for Windows when launching using the Quickstart.
+    8  export PATH="$(win_to_unix_path "${DOCKER_TOOLBOX_INSTALL_PATH}"):$PATH"
+    9  VM=${DOCKER_MACHINE_NAME-default}
+   10  DOCKER_MACHINE="${DOCKER_TOOLBOX_INSTALL_PATH}\docker-machine.exe"
+   11  STEP="Looking for vboxmanage.exe"
+   12  if [ ! -z "$VBOX_MSI_INSTALL_PATH" ]; then   VBOXMANAGE="${VBOX_MSI_INSTALL_PATH}VBoxManage.exe"; else   VBOXMANAGE="${VBOX_INSTALL_PATH}VBoxManage.exe"; fi
+   13  BLUE='\033[1;34m'
+   14  GREEN='\033[0;32m'
+   15  NC='\033[0m'
+   16  #clear all_proxy if not socks address
+   17  if  [[ $ALL_PROXY != socks* ]]; then   unset ALL_PROXY; fi
+   18  if  [[ $all_proxy != socks* ]]; then   unset all_proxy; fi
+   19  if [ ! -f "${DOCKER_MACHINE}" ]; then   echo "Docker Machine is not installed. Please re-run the Toolbox Installer and try again.";   exit 1; fi
+   20  if [ ! -f "${VBOXMANAGE}" ]; then   echo "VirtualBox is not installed. Please re-run the Toolbox Installer and try again.";   exit 1; fi
+   21  "${VBOXMANAGE}" list vms | grep \""${VM}"\" &> /dev/null
+   22  VM_EXISTS_CODE=$?
+   23  set -e
+   24  STEP="Checking if machine $VM exists"
+   25  if [ $VM_EXISTS_CODE -eq 1 ]; then   "${DOCKER_MACHINE}" rm -f "${VM}" &> /dev/null || :;   rm -rf ~/.docker/machine/machines/"${VM}"   if [ "${HTTP_PROXY}" ]; then     PROXY_ENV="$PROXY_ENV --engine-env HTTP_PROXY=$HTTP_PROXY";   fi;   if [ "${HTTPS_PROXY}" ]; then     PROXY_ENV="$PROXY_ENV --engine-env HTTPS_PROXY=$HTTPS_PROXY";   fi;   if [ "${NO_PROXY}" ]; then     PROXY_ENV="$PROXY_ENV --engine-env NO_PROXY=$NO_PROXY";   fi;   "${DOCKER_MACHINE}" create -d virtualbox $PROXY_ENV "${VM}"; fi
+   26  STEP="Checking status on $VM"
+   27  VM_STATUS="$( set +e ; "${DOCKER_MACHINE}" status "${VM}" )"
+   28  if [ "${VM_STATUS}" != "Running" ]; then   "${DOCKER_MACHINE}" start "${VM}";   yes | "${DOCKER_MACHINE}" regenerate-certs "${VM}"; fi
+   29  STEP="Setting env"
+   30  eval "$("${DOCKER_MACHINE}" env --shell=bash --no-proxy "${VM}" | sed -e "s/export/SETX/g" | sed -e "s/=/ /g")" &> /dev/null #for persistent Environment Variables, available in next sessions
+   31  eval "$("${DOCKER_MACHINE}" env --shell=bash --no-proxy "${VM}")" #for transient Environment Variables, available in current session
+   32  STEP="Finalize"
+   33  clear
+   34  cat << EOF
+   35                          ##         .
+   36                    ## ## ##        ==
+   37                 ## ## ## ## ##    ===
+   38             /"""""""""""""""""\___/ ===
+   39        ~~~ {~~ ~~~~ ~~~ ~~~~ ~~~ ~ /  ===- ~~~
+   40             \______ o           __/
+   41               \    \         __/
+   42                \____\_______/
+   43  EOF
+   44  echo -e "${BLUE}docker${NC} is configured to use the ${GREEN}${VM}${NC} machine with IP ${GREEN}$("${DOCKER_MACHINE}" ip ${VM})${NC}"
+   45  echo "For help getting started, check out the docs at https://docs.docker.com"
+   46  echo
+   47  echo 
+   48  #cd #Bad: working dir should be whatever directory was invoked from rather than fixed to the Home folder
+   49  docker () {   MSYS_NO_PATHCONV=1 docker.exe "$@"; }
+   50  export -f docker
+   51  if [ $# -eq 0 ]; then   echo "Start interactive shell";   exec "$BASH" --login -i; else   echo "Start shell with command";   exec "$BASH" -c "$*"; fi
+   52  bb mkdir ~/week1
+   53  mkdir ~/week1
+   54  cd ~/week1
+   55  cd /usr/bin
+   56  cd ~/week1
+   57  ls
+   58  ls usr/bin
+   59  ls /usr/bin
+   60  ls /usr/bin | grep gcc
+   61  ls /usr/bin
+   62  ls /usr/bin | sort -r
+   63  ls /usr/bin | grep gcc | sort -r
+   64  ls /usr/bin | grep gcc | sort -r > ex1.txt
+   65  history > ex2.txt

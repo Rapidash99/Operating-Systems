@@ -1,0 +1,2 @@
+930857 file.txt
+/home/rapidash/Desktop/week01/file.txt
